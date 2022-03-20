@@ -41,11 +41,13 @@ public final class QRCodeEncoder {
     private String contents = null;
     private String displayContents = null;
     private String title = null;
+    private int margin = 3;
     private BarcodeFormat format = null;
     private boolean encoded = false;
 
-    public QRCodeEncoder(String data, Bundle bundle, String type, String format, int dimension) {
+    public QRCodeEncoder(String data, Bundle bundle, String type, String format, int dimension,int margin ) {
         this.dimension = dimension;
+        this.margin = margin;
         encoded = encodeContents(data, bundle, type, format);
     }
 
@@ -197,10 +199,12 @@ public final class QRCodeEncoder {
 
         Map<EncodeHintType, Object> hints = null;
         String encoding = guessAppropriateEncoding(contents);
+        hints = new EnumMap<>(EncodeHintType.class);
         if (encoding != null) {
-            hints = new EnumMap<EncodeHintType, Object>(EncodeHintType.class);
             hints.put(EncodeHintType.CHARACTER_SET, encoding);
         }
+        hints.put(EncodeHintType.MARGIN, this.margin);
+
         MultiFormatWriter writer = new MultiFormatWriter();
         BitMatrix result = writer.encode(contents, format, dimension, dimension, hints);
         int width = result.getWidth();
