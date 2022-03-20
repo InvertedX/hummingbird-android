@@ -7,14 +7,69 @@
     tools:context=".QRActivity">
 
 
+    <TextView
+        android:id="@+id/textView"
+        android:layout_width="0dp"
+        android:layout_height="21dp"
+        android:layout_marginTop="24dp"
+        android:text="QR Content"
+        app:layout_constraintEnd_toEndOf="@+id/scrollView2"
+        app:layout_constraintStart_toStartOf="@+id/scrollView2"
+        app:layout_constraintTop_toBottomOf="@+id/toolbarQR" />
+
+    <ScrollView
+        android:id="@+id/scrollView2"
+        android:layout_width="0dp"
+        android:layout_height="100dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginTop="32dp"
+        android:layout_marginEnd="16dp"
+        android:background="#353535"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/textView">
+
+        <TextView
+            android:id="@+id/qrContentText"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="12dp" />
+    </ScrollView>
+
+
+    <androidx.appcompat.widget.Toolbar
+        android:id="@+id/toolbarQR"
+        android:background="?attr/colorPrimaryVariant"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
+
     <com.invertedx.hummingbird.URQRView
-        android:layout_width="400dp"
         android:id="@+id/urView"
-        android:layout_height="400dp"
+        android:layout_width="360dp"
+        android:layout_height="360dp"
+        android:layout_margin="12dp"
+        android:layout_marginTop="8dp"
+        android:layout_marginBottom="24dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintRight_toRightOf="parent"
-        app:layout_constraintTop_toTopOf="parent" />
+        app:layout_constraintTop_toBottomOf="@+id/scrollView2"
+        app:layout_constraintVertical_bias="0.17000002" />
+
+    <TextView
+        android:id="@+id/urFrameStatus"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:visibility="gone"
+        tools:visibility="visible"
+        android:textAlignment="center"
+         app:layout_constraintEnd_toEndOf="@+id/urView"
+        app:layout_constraintStart_toStartOf="@+id/urView"
+        app:layout_constraintTop_toBottomOf="@+id/urView" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -18,11 +18,14 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-
         <activity
-            android:name="com.invertedx.hummingbird.sample.QRActivity"
+            android:name=".ScanActivity"
             android:theme="@style/Theme.HummingBird"
             android:exported="true" />
-
+        <activity
+            android:name=".QRActivity"
+            android:exported="true"
+            android:theme="@style/Theme.HummingBird" />
     </application>
+
 </manifest>
