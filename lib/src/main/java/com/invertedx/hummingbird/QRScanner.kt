@@ -1,61 +1,43 @@
 package com.invertedx.hummingbird
 
+import android.annotation.SuppressLint
 import android.content.Context
-import android.graphics.Canvas
-import android.graphics.Color
-import android.graphics.Paint
-import android.graphics.drawable.Drawable
-import android.text.TextPaint
 import android.util.AttributeSet
 import android.view.View
+import android.widget.FrameLayout
+import android.widget.TextView
+import com.budiyev.android.codescanner.CodeScanner
+import com.budiyev.android.codescanner.CodeScannerView
+import com.budiyev.android.codescanner.DecodeCallback
+import com.budiyev.android.codescanner.ScanMode
+import com.google.android.material.progressindicator.LinearProgressIndicator
+import com.google.zxing.Result
+import com.sparrowwallet.hummingbird.ResultType
+import com.sparrowwallet.hummingbird.URDecoder
+import com.sparrowwallet.hummingbird.registry.RegistryType
+import kotlinx.coroutines.*
+import kotlin.math.roundToInt
 
-/**
- * TODO: document your custom view class.
- */
-class QRScanner : View {
 
-    private var _exampleString: String? = null // TODO: use a default from R.string...
-    private var _exampleColor: Int = Color.RED // TODO: use a default from R.color...
-    private var _exampleDimension: Float = 0f // TODO: use a default from R.dimen...
+enum class QrDetectType {
+    AUTO,
+    QR_ONLY,
+    UR_ONLY
+}
 
-    private lateinit var textPaint: TextPaint
-    private var textWidth: Float = 0f
-    private var textHeight: Float = 0f
+class QRScanner : FrameLayout {
 
-    /**
-     * The text to draw
-     */
-    var exampleString: String?
-        get() = _exampleString
-        set(value) {
-            _exampleString = value
-            invalidateTextPaintAndMeasurements()
-        }
+    private var _decodeURCallback: (bytes: ByteArray, type: RegistryType) -> Unit = { _, _ -> }
+    private var _decodeQrCallback: (result: String) -> Unit = {}
+    private var _type = QrDetectType.AUTO
+    private val _decoder = URDecoder()
+    private var _linearProgressIndicator: LinearProgressIndicator? = null
+    private var _progressMessage: TextView? = null
+    private var _mCodeScanner: CodeScanner? = null
+    private var _enableURProgress = true
+    private var _scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
+    private var _urTransmissionListener: (totalFrames: Int, processedFrames: Int, progress: Double) -> Unit = { _, _, _ -> }
 
-    /**
-     * The font color
-     */
-    var exampleColor: Int
-        get() = _exampleColor
-        set(value) {
-            _exampleColor = value
-            invalidateTextPaintAndMeasurements()
-        }
-
-    /**
-     * In the example view, this dimension is the font size.
-     */
-    var exampleDimension: Float
-        get() = _exampleDimension
-        set(value) {
-            _exampleDimension = value
-            invalidateTextPaintAndMeasurements()
-        }
-
-    /**
-     * In the example view, this drawable is drawn above the text.
-     */
-    var exampleDrawable: Drawable? = null
 
     constructor(context: Context) : super(context) {
         init(null, 0)
@@ -73,84 +55,100 @@ class QRScanner : View {
         init(attrs, defStyle)
     }
 
+
+    fun setUrTransmissionListener(callback: (totalFrames: Int, processedFrames: Int, progress: Double) -> Unit) {
+        this._urTransmissionListener = callback;
+    }
+
     private fun init(attrs: AttributeSet?, defStyle: Int) {
-        // Load attributes
-        val a = context.obtainStyledAttributes(
+        val attributeSet = context.obtainStyledAttributes(
             attrs, R.styleable.QRScanner, defStyle, 0
         )
-
-        _exampleString = a.getString(
-            R.styleable.QRScanner_exampleString
-        )
-        _exampleColor = a.getColor(
-            R.styleable.QRScanner_exampleColor,
-            exampleColor
-        )
-        // Use getDimensionPixelSize or getDimensionPixelOffset when dealing with
-        // values that should fall on pixel boundaries.
-        _exampleDimension = a.getDimension(
-            R.styleable.QRScanner_exampleDimension,
-            exampleDimension
-        )
-
-        if (a.hasValue(R.styleable.QRScanner_exampleDrawable)) {
-            exampleDrawable = a.getDrawable(
-                R.styleable.QRScanner_exampleDrawable
-            )
-            exampleDrawable?.callback = this
+        inflate(context, R.layout.layout_scanner_view, this);
+        _type = QrDetectType.values()[attributeSet.getInt(R.styleable.QRScanner_enableQrMode, 0)]
+        val codeScanner = findViewById<CodeScannerView>(R.id.codeScanner)
+        _linearProgressIndicator = findViewById(R.id.progressBar)
+        _progressMessage = findViewById(R.id.progressMessage)
+        _mCodeScanner = CodeScanner(context, codeScanner)
+        _linearProgressIndicator?.visibility = View.GONE
+        _progressMessage?.visibility = View.GONE
+        _mCodeScanner?.scanMode = ScanMode.CONTINUOUS
+        _mCodeScanner?.decodeCallback = DecodeCallback {
+            setScanResult(it)
         }
-
-        a.recycle()
-
-        // Set up a default TextPaint object
-        textPaint = TextPaint().apply {
-            flags = Paint.ANTI_ALIAS_FLAG
-            textAlign = Paint.Align.LEFT
-        }
-
-        // Update TextPaint and text measurements from attributes
-        invalidateTextPaintAndMeasurements()
+        attributeSet.recycle()
     }
 
-    private fun invalidateTextPaintAndMeasurements() {
-        textPaint.let {
-            it.textSize = exampleDimension
-            it.color = exampleColor
-            textWidth = it.measureText(exampleString)
-            textHeight = it.fontMetrics.bottom
-        }
+
+    fun startScanner() {
+        _mCodeScanner?.startPreview()
     }
 
-    override fun onDraw(canvas: Canvas) {
-        super.onDraw(canvas)
-
-        // TODO: consider storing these as member variables to reduce
-        // allocations per draw cycle.
-        val paddingLeft = paddingLeft
-        val paddingTop = paddingTop
-        val paddingRight = paddingRight
-        val paddingBottom = paddingBottom
-
-        val contentWidth = width - paddingLeft - paddingRight
-        val contentHeight = height - paddingTop - paddingBottom
-
-        exampleString?.let {
-            // Draw the text.
-            canvas.drawText(
-                it,
-                paddingLeft + (contentWidth - textWidth) / 2,
-                paddingTop + (contentHeight + textHeight) / 2,
-                textPaint
-            )
-        }
-
-        // Draw the example drawable on top of the text.
-        exampleDrawable?.let {
-            it.setBounds(
-                paddingLeft, paddingTop,
-                paddingLeft + contentWidth, paddingTop + contentHeight
-            )
-            it.draw(canvas)
-        }
+    fun stopScanner() {
+        _mCodeScanner?.releaseResources()
+        _mCodeScanner?.stopPreview()
     }
+
+    private fun setScanType(type: QrDetectType) {
+        this._type = type;
+    }
+
+    fun setURDecodeListener(callback: (bytes: ByteArray, type: RegistryType) -> Unit) {
+        this._decodeURCallback = callback;
+    }
+
+    fun showURProgress(enable: Boolean) {
+        this._enableURProgress = enable
+        this.invalidate()
+    }
+
+    fun setQRDecodeListener(callback: (result: String) -> Unit) {
+        this._decodeQrCallback = callback;
+    }
+
+    @SuppressLint("SetTextI18n")
+    private fun setScanResult(it: Result) {
+        val string = it.text
+        _scope.launch(Dispatchers.Main) {
+
+            if (_type == QrDetectType.QR_ONLY) {
+                _decodeQrCallback.invoke(string)
+            }
+            if (_type == QrDetectType.AUTO) {
+                if (!string.lowercase().startsWith("ur:") && _decoder.expectedPartCount == 0) {
+                    _decodeQrCallback.invoke(string)
+                    return@launch
+                }
+            }
+            return@launch
+        }
+        _scope.launch {
+            _decoder.receivePart(string)
+            withContext(Dispatchers.Main) {
+                if (_enableURProgress) {
+                    _linearProgressIndicator?.visibility = View.VISIBLE
+                    _progressMessage?.visibility = View.VISIBLE
+                    _linearProgressIndicator?.max = 100;
+                    _linearProgressIndicator?.setProgressCompat((_decoder.estimatedPercentComplete * 100).roundToInt(), false)
+                    _progressMessage?.text = "${(_decoder.estimatedPercentComplete * 100).roundToInt()}%"
+                } else {
+                    _linearProgressIndicator?.visibility = View.GONE
+                    _progressMessage?.visibility = View.GONE
+                }
+                if (_decoder.expectedPartCount != 0) {
+                    _urTransmissionListener.invoke(_decoder.expectedPartCount, _decoder.processedPartsCount, _decoder.estimatedPercentComplete)
+                }
+                if (_decoder.result != null && _decoder.result.type == ResultType.SUCCESS) {
+                    _decodeURCallback.invoke(_decoder.result.ur.toBytes(), RegistryType.fromString(_decoder.result.ur.type))
+                    return@withContext;
+                }
+            }
+        }
+
+    }
+
+    companion object {
+        private const val TAG = "QRScanner"
+    }
+
 }

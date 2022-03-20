@@ -1,8 +1,10 @@
 <resources>
     <declare-styleable name="QRScanner">
-        <attr name="exampleString" format="string" />
-        <attr name="exampleDimension" format="dimension" />
-        <attr name="exampleColor" format="color" />
-        <attr name="exampleDrawable" format="color|reference" />
+        <attr name="enableUrProgress" format="boolean" />
+        <attr name="enableQrMode" format="enum" >
+            <enum name="auto" value="0" />
+            <enum name="qr" value="1" />
+            <enum name="ur" value="2" />
+        </attr>
     </declare-styleable>
 </resources>

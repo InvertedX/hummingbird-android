@@ -1,8 +1,7 @@
 <resources>
     <declare-styleable name="URQRView">
-<!--        <attr name="exampleString" format="string" />-->
-<!--        <attr name="exampleDimension" format="dimension" />-->
-<!--        <attr name="exampleColor" format="color" />-->
-<!--        <attr name="exampleDrawable" format="color|reference" />-->
+        <attr name="qrcontent" format="string" />
+        <attr name="fps" format="integer" />
+        <attr name="margin" format="integer" />
     </declare-styleable>
 </resources>
