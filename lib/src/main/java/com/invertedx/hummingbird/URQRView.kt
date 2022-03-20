@@ -12,6 +12,7 @@ import com.invertedx.hummingbird.encoder.Contents
 import com.invertedx.hummingbird.encoder.encode.QRCodeEncoder
 import com.sparrowwallet.hummingbird.UR
 import com.sparrowwallet.hummingbird.UREncoder
+import com.sparrowwallet.hummingbird.registry.RegistryType
 import kotlinx.coroutines.*
 import java.nio.charset.Charset
 

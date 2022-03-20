@@ -110,7 +110,6 @@ class QRScanner : FrameLayout {
     private fun setScanResult(it: Result) {
         val string = it.text
         _scope.launch(Dispatchers.Main) {
-
             if (_type == QrDetectType.QR_ONLY) {
                 _decodeQrCallback.invoke(string)
             }
