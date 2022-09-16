@@ -1,11 +1,15 @@
 package com.invertedx.hummingbird
 
+import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Context
+import android.content.pm.PackageManager
 import android.util.AttributeSet
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
+import android.widget.Toast
+import androidx.core.content.ContextCompat
 import com.budiyev.android.codescanner.CodeScanner
 import com.budiyev.android.codescanner.CodeScannerView
 import com.budiyev.android.codescanner.DecodeCallback
@@ -81,7 +85,12 @@ class QRScanner : FrameLayout {
 
 
     fun startScanner() {
-        _mCodeScanner?.startPreview()
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
+            == PackageManager.PERMISSION_GRANTED) {
+            _mCodeScanner?.startPreview()
+        }else{
+            Toast.makeText(context,"Permission not granted",Toast.LENGTH_SHORT).show()
+        }
     }
 
     fun stopScanner() {
