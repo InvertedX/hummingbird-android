@@ -32,4 +32,6 @@ implementation('com.sparrowwallet:hummingbird:1.6.4')
 //Android bindings for UR QR and Scanner
  implementation 'com.github.InvertedX:hummingbird-android:0.7'
 ```
+
+[WIP:Flutter version](https://github.com/InvertedX/hummingbird-flutter)
  
