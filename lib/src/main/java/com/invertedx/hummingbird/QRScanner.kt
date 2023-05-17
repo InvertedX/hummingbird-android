@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.pm.PackageManager
 import android.util.AttributeSet
+import android.util.Log
 import android.view.View
 import android.widget.FrameLayout
 import android.widget.TextView
@@ -16,10 +17,12 @@ import com.budiyev.android.codescanner.DecodeCallback
 import com.budiyev.android.codescanner.ScanMode
 import com.google.android.material.progressindicator.LinearProgressIndicator
 import com.google.zxing.Result
+import com.sparrowwallet.hummingbird.LegacyURDecoder
 import com.sparrowwallet.hummingbird.ResultType
 import com.sparrowwallet.hummingbird.URDecoder
 import com.sparrowwallet.hummingbird.registry.RegistryType
 import kotlinx.coroutines.*
+import kotlin.jvm.internal.Intrinsics.Kotlin
 import kotlin.math.roundToInt
 
 
@@ -31,7 +34,7 @@ enum class QrDetectType {
 
 class QRScanner : FrameLayout {
 
-    private var _decodeURCallback: (bytes: ByteArray, type: RegistryType) -> Unit = { _, _ -> }
+    private var _decodeURCallback: (result: kotlin.Result<URDecoder.Result>) -> Unit = { _ -> }
     private var _decodeQrCallback: (result: String) -> Unit = {}
     private var _type = QrDetectType.AUTO
     private val _decoder = URDecoder()
@@ -40,7 +43,8 @@ class QRScanner : FrameLayout {
     private var _mCodeScanner: CodeScanner? = null
     private var _enableURProgress = true
     private var _scope = CoroutineScope(Dispatchers.Default + SupervisorJob())
-    private var _urTransmissionListener: (totalFrames: Int, processedFrames: Int, progress: Double) -> Unit = { _, _, _ -> }
+    private var _urTransmissionListener: (totalFrames: Int, processedFrames: Int, progress: Double) -> Unit =
+        { _, _, _ -> }
 
 
     constructor(context: Context) : super(context) {
@@ -85,11 +89,12 @@ class QRScanner : FrameLayout {
 
 
     fun startScanner() {
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-            == PackageManager.PERMISSION_GRANTED) {
+        if (ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA)
+            == PackageManager.PERMISSION_GRANTED
+        ) {
             _mCodeScanner?.startPreview()
-        }else{
-            Toast.makeText(context,"Permission not granted",Toast.LENGTH_SHORT).show()
+        } else {
+            Toast.makeText(context, "Permission not granted", Toast.LENGTH_SHORT).show()
         }
     }
 
@@ -102,8 +107,8 @@ class QRScanner : FrameLayout {
         this._type = type;
     }
 
-    fun setURDecodeListener(callback: (bytes: ByteArray, type: RegistryType) -> Unit) {
-        this._decodeURCallback = callback;
+    fun setURDecodeListener(callback: (result: kotlin.Result<URDecoder.Result>) -> Unit) {
+        this._decodeURCallback = callback
     }
 
     fun showURProgress(enable: Boolean) {
@@ -131,29 +136,58 @@ class QRScanner : FrameLayout {
             return@launch
         }
         _scope.launch {
-            _decoder.receivePart(string)
-            withContext(Dispatchers.Main) {
-                if (_enableURProgress) {
-                    _linearProgressIndicator?.visibility = View.VISIBLE
-                    _progressMessage?.visibility = View.VISIBLE
-                    _linearProgressIndicator?.max = 100;
-                    _linearProgressIndicator?.setProgressCompat((_decoder.estimatedPercentComplete * 100).roundToInt(), false)
-                    _progressMessage?.text = "${(_decoder.estimatedPercentComplete * 100).roundToInt()}%"
-                } else {
-                    _linearProgressIndicator?.visibility = View.GONE
-                    _progressMessage?.visibility = View.GONE
+            try {
+                _decoder.receivePart(string)
+                withContext(Dispatchers.Main) {
+                    if (_enableURProgress) {
+                        _linearProgressIndicator?.visibility = View.VISIBLE
+                        _progressMessage?.visibility = View.VISIBLE
+                        _linearProgressIndicator?.max = 100;
+                        _linearProgressIndicator?.setProgressCompat(
+                            (_decoder.estimatedPercentComplete * 100).roundToInt(),
+                            false
+                        )
+                        _progressMessage?.text =
+                            "${(_decoder.estimatedPercentComplete * 100).roundToInt()}%"
+                    } else {
+                        _linearProgressIndicator?.visibility = View.GONE
+                        _progressMessage?.visibility = View.GONE
+                    }
+                    if (_decoder.expectedPartCount != 0) {
+                        _urTransmissionListener.invoke(
+                            _decoder.expectedPartCount,
+                            _decoder.processedPartsCount,
+                            _decoder.estimatedPercentComplete
+                        )
+                    }
+                    if (_decoder.result != null && _decoder.result.type == ResultType.SUCCESS) {
+                        _linearProgressIndicator?.setProgressCompat(
+                           100,
+                            false
+                        )
+                        _progressMessage?.text =
+                            "100%"
+                        val result = kotlin.Result.success(_decoder.result)
+                        _decodeURCallback.invoke(result)
+                        return@withContext
+                    }
                 }
-                if (_decoder.expectedPartCount != 0) {
-                    _urTransmissionListener.invoke(_decoder.expectedPartCount, _decoder.processedPartsCount, _decoder.estimatedPercentComplete)
-                }
-                if (_decoder.result != null && _decoder.result.type == ResultType.SUCCESS) {
-                    _decodeURCallback.invoke(_decoder.result.ur.toBytes(), RegistryType.fromString(_decoder.result.ur.type))
-                    return@withContext;
+            } catch (e: Exception) {
+                _linearProgressIndicator?.setProgressCompat(
+                    0,
+                    false
+                )
+                _progressMessage?.text =
+                    "0%"
+                withContext(Dispatchers.Main){
+                    val result = kotlin.Result.failure<URDecoder.Result>(Throwable(e))
+                    _decodeURCallback.invoke(result)
                 }
             }
         }
 
     }
+
 
     companion object {
         private const val TAG = "QRScanner"

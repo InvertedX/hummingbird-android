@@ -12,21 +12,42 @@ class ScanActivity : AppCompatActivity() {
         setContentView(R.layout.activity_scan)
 
 
-        val scanner = findViewById<QRScanner>(R.id.qrScanner);
+        val scanner = findViewById<QRScanner>(R.id.qrScanner)
 
         scanner.startScanner()
 
         scanner.setUrTransmissionListener { totalFrames, processedFrames, progress ->
-                //noop
-         }
-        scanner.setURDecodeListener { bytes, _ ->
-            MaterialAlertDialogBuilder(this)
-                    .setTitle("UR Result")
-                    .setMessage(bytesToHex(bytes))
-                    .setPositiveButton("Ok") { dialog, which ->
-                        dialog.dismiss()
-                    }.show();
+            //noop
+        }
+        scanner.setURDecodeListener { result ->
             scanner.stopScanner()
+            result.fold(
+                onSuccess = {
+                    val urResult = result.getOrThrow()
+                    //try to get the bytes from the UR, if it fails, get the CBOR bytes
+                    val bytes = try {
+                        urResult.ur.toBytes()
+                    } catch (e: Exception) {
+                        urResult.ur.cborBytes
+                    }
+                    MaterialAlertDialogBuilder(this@ScanActivity)
+                        .setTitle("UR Result")
+                        .setMessage(bytesToHex(bytes))
+                        .setPositiveButton("Ok") { dialog, which ->
+                            dialog.dismiss()
+                        }.show()
+                },
+                onFailure = {
+                    MaterialAlertDialogBuilder(this)
+                        .setTitle("Error decoding UR")
+                        .setMessage("Exception: ${it.message}")
+                        .setPositiveButton("Ok") { dialog, which ->
+                            dialog.dismiss()
+                        }.show()
+                    scanner.stopScanner()
+                }
+            )
+
         }
         scanner.setQRDecodeListener {
             MaterialAlertDialogBuilder(this)
@@ -34,12 +55,11 @@ class ScanActivity : AppCompatActivity() {
                 .setMessage(it)
                 .setPositiveButton("Ok") { dialog, _ ->
                     dialog.dismiss()
-                }.show();
-            scanner.stopScanner();
+                }.show()
+            scanner.stopScanner()
         }
 
     }
-
 
 
 }
