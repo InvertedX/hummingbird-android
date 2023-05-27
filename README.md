@@ -1,6 +1,7 @@
 # Hummingbird-Android
 
 ### Android implementation of Uniform Resources (UR)
+[![](https://jitpack.io/v/InvertedX/hummingbird-android.svg)](https://jitpack.io/#InvertedX/hummingbird-android)
 <div style="text-align: center">
 <table>
 <tr>
@@ -30,7 +31,44 @@ implementation('com.sparrowwallet:hummingbird:1.6.4')
  maven { url 'https://jitpack.io' }
 
 //Android bindings for UR QR and Scanner
- implementation 'com.github.InvertedX:hummingbird-android:0.7'
+ implementation 'com.github.InvertedX:hummingbird-android:0.9'
+```
+## Scanner Usage
+```
+    <com.invertedx.hummingbird.QRScanner
+        android:id="@+id/qrScanner"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"  />
+```
+### Listen to QR
+```     
+val scanner = findViewById<QRScanner>(R.id.qrScanner)
+scanner.startScanner()
+//Detects QR scans 
+ scanner.setQRDecodeListener {
+            scanner.stopScanner()
+            MaterialAlertDialogBuilder(this@ScanActivity)
+                .setTitle("QR Result")
+                .setMessage(it)
+                .setPositiveButton("Ok") { dialog, _ ->
+                    dialog.dismiss()
+                }.show()
+        }
+```
+### Listen to UR QR scans
+```
+//Detects UR QR scans 
+scanner.setURDecodeListener { result ->
+    scanner.stopScanner()
+     result.fold(
+                onSuccess = {
+                    //handle UR result
+                }
+                onFailure = {
+                    // any scan failure 
+                }
+    )
+}
 ```
 
 [WIP:Flutter version](https://github.com/InvertedX/hummingbird-flutter)
