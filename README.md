@@ -2,6 +2,7 @@
 
 ### Android implementation of Uniform Resources (UR)
 [![](https://jitpack.io/v/InvertedX/hummingbird-android.svg)](https://jitpack.io/#InvertedX/hummingbird-android)
+
 <div style="text-align: center">
 <table>
 <tr>
@@ -68,6 +69,31 @@ scanner.setURDecodeListener { result ->
                     // any scan failure 
                 }
     )
+}
+```
+
+## UR QR view usage
+
+
+```
+    <com.invertedx.hummingbird.URQRView
+        android:id="@+id/urView"
+        android:layout_width="360dp"
+        android:layout_height="360dp"  />
+        
+  ```
+create UR view referennce
+ ```
+  val urView = findViewById<URQRView>(R.id.urView)
+ ```
+set UR content
+```
+   urView.setContent(UR.fromBytes(hexToBytes(psbtHex)))
+```
+listen to UR transmission state
+```
+urView.setUrTransmissionListener { totalFrames, currentFrame ->
+    urFrameStatus.text = "Current Frame: ${currentFrame} - TotalFrames ${totalFrames} \n\n FPS: ${urView.fps}"
 }
 ```
 
