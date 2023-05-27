@@ -1,7 +1,7 @@
 package com.invertedx.hummingbird.sample
 
 
-fun hexToBytes(s: String): ByteArray? {
+fun hexToBytes(s: String): ByteArray {
     val len = s.length
     val data = ByteArray(len / 2)
     var i = 0

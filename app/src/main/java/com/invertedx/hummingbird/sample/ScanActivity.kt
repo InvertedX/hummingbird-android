@@ -16,8 +16,21 @@ class ScanActivity : AppCompatActivity() {
 
         scanner.startScanner()
 
-        scanner.setUrTransmissionListener { totalFrames, processedFrames, progress ->
+        scanner.setUrTransmissionListener { _, processedFrames, progress ->
             //noop
+        }
+
+        scanner.setQRDecodeListener {
+            scanner.stopScanner()
+            MaterialAlertDialogBuilder(this@ScanActivity)
+                .setTitle("QR Result")
+                .setMessage(it)
+                .setPositiveButton("Ok") { dialog, _ ->
+                    dialog.dismiss()
+                }.show()
+        }
+        scanner.setOnClickListener {
+            scanner.startScanner()
         }
         scanner.setURDecodeListener { result ->
             scanner.stopScanner()
@@ -41,23 +54,15 @@ class ScanActivity : AppCompatActivity() {
                     MaterialAlertDialogBuilder(this)
                         .setTitle("Error decoding UR")
                         .setMessage("Exception: ${it.message}")
-                        .setPositiveButton("Ok") { dialog, which ->
+                        .setPositiveButton("Ok") { dialog, _ ->
                             dialog.dismiss()
+                            scanner.stopScanner()
                         }.show()
-                    scanner.stopScanner()
                 }
             )
 
         }
-        scanner.setQRDecodeListener {
-            MaterialAlertDialogBuilder(this)
-                .setTitle("Result")
-                .setMessage(it)
-                .setPositiveButton("Ok") { dialog, _ ->
-                    dialog.dismiss()
-                }.show()
-            scanner.stopScanner()
-        }
+
 
     }
 
