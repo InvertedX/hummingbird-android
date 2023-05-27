@@ -32,7 +32,7 @@ implementation('com.sparrowwallet:hummingbird:1.6.4')
  maven { url 'https://jitpack.io' }
 
 //Android bindings for UR QR and Scanner
- implementation 'com.github.InvertedX:hummingbird-android:0.9'
+ implementation 'com.github.InvertedX:hummingbird-android:0.9.2'
 ```
 ## Scanner Usage
 ```
