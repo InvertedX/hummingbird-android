@@ -17,18 +17,19 @@ import kotlinx.coroutines.*
 import java.nio.charset.Charset
 
 
+//Draws animated QR codes
 class URQRView : View {
 
     private var _minFragmentLength = 10
     private var _maxFragmentLength = 100
-    private var _currentFrame = 0;
-    private var _qrMargin = 1;
+    private var _currentFrame = 0
+    private var _qrMargin = 1
     private var qrRect = Rect(0, 0, width, height)
     private var _job: Job? = null
     private val bitmapList = arrayListOf<Bitmap?>()
     private var _fps = 12
     private var _ur: UR? = null
-    private var _content: String = "";
+    private var _content: String = ""
     private var scope = CoroutineScope(Dispatchers.Unconfined) + SupervisorJob()
     private var urTransmissionListener: (totalFrames: Int, currentFrame: Int) -> Unit = { _, _ -> }
 
@@ -73,12 +74,12 @@ class URQRView : View {
 
     fun setContent(type: RegistryType, content: String) {
         this._ur = UR.fromBytes(type.type, content.toByteArray())
-        this._content = content;
+        this._content = content
         this.makeUR()
     }
 
     fun getUR(): UR? {
-        return this._ur;
+        return this._ur
     }
 
     fun setContent(ur: UR) {
@@ -97,7 +98,7 @@ class URQRView : View {
         }
 
     fun setUrTransmissionListener(callback: (totalFrames: Int, currentFrame: Int) -> Unit) {
-        this.urTransmissionListener = callback;
+        this.urTransmissionListener = callback
     }
 
     constructor(context: Context) : super(context) {
@@ -126,18 +127,19 @@ class URQRView : View {
             _content = it
             this._ur = UR.fromBytes(it.toByteArray())
         }
-        _fps = a.getInt(R.styleable.URQRView_fps, 12);
+        _fps = a.getInt(R.styleable.URQRView_fps, 12)
         a.recycle()
         makeUR()
     }
 
 
+    //calculates the QR frames and create QR bitmaps
     private fun makeUR() {
         CoroutineScope(Dispatchers.Unconfined).launch {
             stopLoop()
             bitmapList.clear()
             if (_ur == null) {
-                return@launch;
+                return@launch
             }
             val encoder = UREncoder(_ur, _maxFragmentLength, _minFragmentLength, 0)
             if (encoder.isSinglePart) {
@@ -148,7 +150,7 @@ class URQRView : View {
                     BarcodeFormat.QR_CODE.toString(),
                     width,
                     1
-                );
+                )
                 bitmapList.add(qrCodeEncoder.encodeAsBitmap())
             } else {
                 while (!encoder.isComplete) {
@@ -159,7 +161,7 @@ class URQRView : View {
                         BarcodeFormat.QR_CODE.toString(),
                         width,
                         _qrMargin
-                    );
+                    )
                     bitmapList.add(qrCodeEncoder.encodeAsBitmap())
                 }
             }
@@ -174,7 +176,7 @@ class URQRView : View {
 
     private fun startLoop() {
         if (bitmapList.size == 1) {
-            invalidate();
+            invalidate()
             return
         }
         _job = scope.launch {
@@ -186,7 +188,7 @@ class URQRView : View {
                     _currentFrame += 1
                 }
                 withContext(Dispatchers.Main) {
-                    urTransmissionListener.invoke(bitmapList.size, _currentFrame);
+                    urTransmissionListener.invoke(bitmapList.size, _currentFrame)
                     invalidate()
                 }
             }
